@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Nov 28 20:56:07 2019
-
-@author: nana
-
-I, Bohan Gou, 000360941 certify that this material is my original work. No other person's work has been used without due acknowledgement. I have not made my work available to anyone else
-
-"""
+ 
  
 import pandas as pd
 from sklearn.cluster import MiniBatchKMeans, KMeans
