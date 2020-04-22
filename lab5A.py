@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Nov 28 20:56:07 2019
+
+@author: nana
+
+I, Bohan Gou, 000360941 certify that this material is my original work. No other person's work has been used without due acknowledgement. I have not made my work available to anyone else
+
+"""
+ 
+import pandas as pd
+from sklearn.cluster import MiniBatchKMeans, KMeans
+
+from matplotlib import pyplot as plt 
+  
+SSE = [] 
+
+#load in the data file
+dataSet=pd.read_csv("data.csv") 
+      
+#for k, get value from 1 to 15, and draw the graph
+for k in range(1,15):
+    estimator = KMeans(n_clusters=k)   
+    estimator.fit(dataSet[['Fresh','Milk','Grocery','Frozen','Detergents_Paper','Delicassen']]) 
+    SSE.append(estimator.inertia_) 
+    print ("K = ",k,"    "," SSE = ",round(estimator.inertia_,2))
+    #    print (SSE)
+X = range(1,15)
+plt.xlabel('k')
+plt.ylabel('SSE')
+plt.plot(X,SSE,'.-')
+plt.show() 
+ 
+print('If I have to pick the elbow of the graph,\nI will pick K=3. k=3 looks like the turning point of the graph')
+
+print('\n\n') 
+ 
+ 
+
+for k in range(1,6):
+    estimator = KMeans(n_clusters=k)   
+    estimator.fit(dataSet[['Channel','Region','Fresh','Milk','Grocery','Frozen','Detergents_Paper','Delicassen']]) 
+    SSE.append(estimator.inertia_)  
+    print ("K =",k,"    "," SSE =",round(estimator.inertia_,2))
+    
+print('\n\n')  
+
+for i in range(1,6):
+    k=i
+    
+    y_pred = MiniBatchKMeans(n_clusters=k).fit_predict(dataSet)
+    
+    C1 = 0
+    C2= 0
+    C3 = 0
+    C4= 0
+    C5 = 0
+#show the length of each cluster
+     
+    for i in range(0, len(y_pred)):
+        if y_pred[i] == 0:
+            C1 += 1
+        elif y_pred[i] == 1:
+            C2 += 1
+        elif y_pred[i] == 2:
+            C3 += 1
+        elif y_pred[i] == 3:
+            C4 += 1
+        elif y_pred[i] == 4:
+            C5 += 1
+            
+    print ('Cluster 1=%d,  Cluster 2=%d,  Cluster 3=%d,  Cluster 4=%d,  Cluster 5=%d,' % (C1,C2,C3,C4,C5))            
+          
+print('\n\n')
+
+import numpy as np
+from matplotlib import pyplot as plt 
+from sklearn.cluster import KMeans
+run=0
+def plot(dataSet, centroids, assignments, fignum=""):
+    """Plots the dataset using the first two dimensions"""
+    centroids = np.array(centroids)
+    clusters = [[] for point in centroids]
+    for i in range(len(assignments)):
+        clusters[int(assignments[i,0])].append(dataSet[i])
+    centroid_color = "black"
+    empty_centroid_color = "lightgray"
+    centroid_marker = "8"
+    colors = ["red","green","blue","magenta","cyan","orange","brown","grey","yellow"]
+    markers = [".",",","v","^","<",">","1","2","3","4","s","p","P","*","h","H","+","x","X","D","d"]
+    plt.figure(fignum)
+    for i in range(len(clusters)):
+        data = np.array(clusters[i])
+        if (len(data) > 0):
+            plt.title("Plot "+fignum)
+            plt.scatter(data[:,0], data[:,1], color=colors[i%len(colors)], marker=markers[i%len(markers)])
+            plt.scatter(centroids[i,0], centroids[i,1], color=centroid_color, marker=centroid_marker)
+        else:
+            plt.scatter(centroids[i,0], centroids[i,1], color=empty_centroid_color, marker=centroid_marker)
+            print("plot() warning:",fignum,"has an empty cluster")
+    # plot the centroids
+    data = np.array(centroids)
+    plt.show()
+
+def euclideanDistance(vecA, vecB):
+    """Returns Euclidean distance between two vectors"""
+    return np.sqrt((np.power(np.array(vecA) - np.array(vecB), 2)).sum()) 
+
+def randCent(dataSet, k):
+    """Return k random centroids from a 2 dimensional dataSet"""
+    dataSet = np.array(dataSet)
+    n = dataSet.shape[1]
+    #create random cluster centers, within bounds of each dimension
+    centroids = np.mat(np.zeros((k,n))) 
+    for j in range(n): 
+        minJ = dataSet[:,j].min()
+        rangeJ = float(dataSet[:,j].max() - minJ)
+        centroids[:,j] = np.mat(minJ + rangeJ * np.random.rand(k,1))
+    return centroids
+def kMeans(data, k, distMeas=euclideanDistance, createCent=randCent, showPlots=False, runInc=True):
+    """Call this with two args: data and k. Add showPlots=True if you want to 
+    see the clusters plotted as they evolve."""
+    # code to give each plot a unique name
+    global run
+    if runInc:
+        run += 1
+    dataSet = np.mat(data)
+    m = dataSet.shape[0]
+    #create mat to assign data points to a centroid, also holds SE of each point
+    clusterAssment = np.mat(np.zeros((m,2)))
+    centroids = createCent(dataSet, k)
+    clusterChanged = True
+    iteration = 0
+    while clusterChanged:
+        iteration += 1
+        clusterChanged = False
+        #for each data point assign it to the closest centroid
+        for i in range(m): 
+            minDist = np.inf
+            minIndex = -1
+            for j in range(k):
+                distJI = distMeas(centroids[j,:],dataSet[i,:])
+                if distJI < minDist:
+                    minDist = distJI; minIndex = j
+            if clusterAssment[i,0] != minIndex: clusterChanged = True
+            clusterAssment[i,:] = minIndex,minDist**2
+        #plot centroids
+        if showPlots:
+            plot(data, centroids, clusterAssment, str(run)+"_"+str(iteration))
+        #recalculate centroids
+        for cent in range(k): 
+            ptsInClust = dataSet[(clusterAssment[:,0].A==cent).nonzero()[0]] #get all the point in this cluster
+            centroids[cent,:] = ptsInClust.mean(axis=0) #assign centroid to mean 
+    return np.array(centroids), np.array(clusterAssment)
+        
+
+labels = pd.read_csv('data.csv')  # load labels
+labels = np.array(labels)   
+
+ 
+for k in range(10):
+    km = KMeans(n_clusters=k) # use verbose=1 to see the run in action
+km.fit(dataSet)    # fit the data
+for k in range(1,9):    # for loop to get the clusters
+    print('Cluster ',k)
+    cluster = labels[km.labels_ == k]
+    print('3 appeared',sum(cluster == 3),'times')
+    print('2 appeared',sum(cluster == 2),'times')
+    print('1 appeared',sum(cluster == 1),'times')
+km.inertia_    # Sum of squared distances to their closest cluster center.
+km.predict(km.cluster_centers_)    # Predict the closest cluster each sample belongs to.    
+    
+    
